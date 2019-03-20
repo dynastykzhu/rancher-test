@@ -1,7 +1,11 @@
 package com.fmrt.rancher;
 
 import com.fmrt.rancher.base.TypeCollection;
+import com.fmrt.rancher.service.ClusterService;
+import com.fmrt.rancher.service.NamespacesService;
 import com.fmrt.rancher.service.WorkloadsService;
+import com.fmrt.rancher.type.Cluster;
+import com.fmrt.rancher.type.Namespaces;
 import com.fmrt.rancher.type.Workloads;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,13 +21,31 @@ import java.util.List;
 @SpringBootTest
 public class RancherApplicationTests {
 
+    final static String HOST_IP = "https://192.168.56.100";
+    final static String ACCESS_KEY = "token-bs5xf";
+    final static String SECRET_KEY = "q2g4wfgb4rg5mbdpfjl74vv56rm5hbbcbnf6vj2b5f5vsd8xrnjbsg";
+
+
+
     private Rancher rancher = null;
+
+    Rancher.Config workloadsConfig = null;
+    Rancher.Config namespacesConfig = null;
+    Rancher.Config clusterConfig = null;
 
     @Before
     public void Before() throws Exception {
-        Rancher.Config config = new Rancher.Config(new URL("https://179.20.101.164/v3/project/c-dkn4v:p-szwp5/"),
-                "token-zs2tr", "d7vcl87cdwlwp82jvdmjs6gmp6nd28rvhtwgb2pqr547flpwrt7cg2");
-        rancher = new Rancher(config);
+        //company
+//        Rancher.Config config = new Rancher.Config(new URL("https://179.20.101.164/v3/project/c-dkn4v:p-szwp5/"),
+//                "token-zs2tr", "d7vcl87cdwlwp82jvdmjs6gmp6nd28rvhtwgb2pqr547flpwrt7cg2");
+        //home
+        workloadsConfig = new Rancher.Config(new URL(HOST_IP + "/v3/project/c-p8fcb:p-jw24t/"), ACCESS_KEY, SECRET_KEY);
+
+        namespacesConfig = new Rancher.Config(new URL(HOST_IP + "/v3/cluster/c-p8fcb/"), ACCESS_KEY, SECRET_KEY);
+
+        clusterConfig = new Rancher.Config(new URL(HOST_IP + "/v3/cluster/"), ACCESS_KEY, SECRET_KEY);
+
+        rancher = new Rancher(workloadsConfig);
 
     }
 
@@ -74,8 +96,8 @@ public class RancherApplicationTests {
         Workloads.ContainersBean containersBean = new Workloads.ContainersBean();
         containersBean.setImage(imageName);
         containersBean.setName(name);
-     //   Workloads.ContainersBean.ResourcesBean resourcesBean = new Workloads.ContainersBean.ResourcesBean();
-    //    resourcesBean.setType("/v3/project/schemas/resourceRequirements");
+        //   Workloads.ContainersBean.ResourcesBean resourcesBean = new Workloads.ContainersBean.ResourcesBean();
+        //    resourcesBean.setType("/v3/project/schemas/resourceRequirements");
 //        containersBean.setResources(resourcesBean);
 
 
@@ -110,5 +132,74 @@ public class RancherApplicationTests {
 
 
     }
+
+
+    @Test
+    public void listNamespacesTest() throws IOException {
+        Rancher rancher = new Rancher(workloadsConfig);
+
+        NamespacesService namespacesService = rancher.type(NamespacesService.class);
+        Response<TypeCollection<Namespaces>> execute = namespacesService.list().execute();
+        System.out.println(execute);
+        List<Namespaces> data = execute.body().getData();
+        for (Namespaces datum : data) {
+            datum.setCaCrt("");
+            System.out.println(datum);
+        }
+        System.out.println(data.size());
+    }
+
+    @Test
+    public void getNamespacesTest() throws IOException {
+
+        Rancher rancher = new Rancher(namespacesConfig);
+        NamespacesService namespacesService = rancher.type(NamespacesService.class);
+        Response<Namespaces> execute = namespacesService.get("dong-test").execute();
+        System.out.println(execute);
+        Namespaces data = execute.body();
+        System.out.println(data);
+
+    }
+    @Test
+    public void delNamespacesTest() throws IOException {
+
+        Rancher rancher = new Rancher(namespacesConfig);
+        NamespacesService namespacesService = rancher.type(NamespacesService.class);
+        Response<Namespaces> execute = namespacesService.delete("dong-test").execute();
+        System.out.println(execute);
+        Namespaces data = execute.body();
+        System.out.println(data);
+
+    }
+    @Test
+    public void createNamespacesTest() throws IOException {
+
+        Rancher rancher = new Rancher(clusterConfig);
+        NamespacesService namespacesService = rancher.type(NamespacesService.class);
+        Namespaces namespaces = new Namespaces();
+        namespaces.setName("dongngngn");
+        namespaces.setProjectId("c-p8fcb:p-jw24t");
+        Response<Namespaces> execute = namespacesService.create(namespaces).execute();
+        System.out.println(execute);
+        Namespaces data = execute.body();
+        System.out.println(data);
+
+    }
+
+
+    @Test
+    public void listClusterTest() throws IOException {
+        Rancher rancher = new Rancher(clusterConfig);
+
+        ClusterService clusterService = rancher.type(ClusterService.class);
+        Response<TypeCollection<Cluster>> execute = clusterService.list().execute();
+        System.out.println(execute);
+        List<Cluster> data = execute.body().getData();
+        for (Cluster datum : data) {
+            System.out.println(datum);
+        }
+        System.out.println(data.size());
+    }
+
 
 }
